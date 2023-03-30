@@ -1,84 +1,39 @@
-run:
-  concurrency: 4
-  deadline: 180s
-  issues-exit-code: 1
-  tests: true
-output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: false
-  goimports:
-    local-prefixes: github.com/vivangkumar/ratelimit
-  govet:
-    check-shadowing: true
-  gofmt:
-    simplify: true
-  gocyclo:
-    min-complexity: 15
-  maligned:
-    suggest-new: true
-  dupl:
-    threshold: 120
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-  misspell:
-    locale: UK
-  lll:
-    line-length: 120
-    tab-width: 1
-  unparam:
-    check-exported: true
-  nakedret:
-    max-func-lines: 30
-  prealloc:
-    simple: true
-    range-loops: true
-    for-loops: true
-  gocritic:
-    settings:
-      captLocal:
-        paramsOnly: true
-  exhaustive:
-    default-signifies-exhaustive: true
-
 linters:
   enable:
-    - govet
-    - gofmt
-    - gocritic
+    - asciicheck
+    - bodyclose
+    - depguard
+    - dogsled
+    - durationcheck
     - errcheck
-    - staticcheck
-    - unused
-    - gosimple
-    - structcheck
-    - varcheck
-    - ineffassign
-    - deadcode
-    - typecheck
-    - stylecheck
-    - interfacer
-    - unconvert
-    - dupl
-    - goconst
-    - gocyclo
+    - errorlint
+    - exportloopref
+    - gci
+    - gofmt
+    - gofumpt
     - goimports
-    - maligned
+    - gosec
+    - gosimple
+    - govet
+    - importas
+    - ineffassign
+    - megacheck
     - misspell
     - nakedret
-    - scopelint
+    - nolintlint
+    - revive
+    - staticcheck
+    - typecheck
+    - unconvert
     - unparam
-    - prealloc
-    - lll
-    - godox
-    - gocognit
-    - exhaustive
-  fast: false
+    - unused
+    - wastedassign
 
-issues:
-  new: false
-  exclude-use-default: true
+linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/vivangkumar)
+run:
+  timeout: 5m

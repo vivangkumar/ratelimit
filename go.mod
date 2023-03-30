@@ -1,12 +1,8 @@
 module github.com/vivangkumar/ratelimit
 
-go 1.18
+go 1.19
 
-require (
-	github.com/stretchr/testify v1.8.2
-	github.com/golangci/golangci-lint v1.50.0
-	golang.org/x/tools v0.7.0
-)
+require github.com/stretchr/testify v1.8.2
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

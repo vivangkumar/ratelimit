@@ -71,3 +71,7 @@ make build
 [doc-img]: https://pkg.go.dev/badge/vivangkumar/ratelimit
 [doc]: https://pkg.go.dev/vivangkumar/ratelimit
 [ci-img]: https://github.com/vivangkumar/ratelimit/actions/workflows/ci.yaml/badge.svg?branch=main
+
+## Changelog
+
+Please add changes between release to the changelog [Changelog](CHANGELOG.md).

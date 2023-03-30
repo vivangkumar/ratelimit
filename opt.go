@@ -1,4 +1,4 @@
-package ratelimiter
+package ratelimit
 
 type Opt func(r *RateLimiter)
 

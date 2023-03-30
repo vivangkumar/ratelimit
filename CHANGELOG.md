@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- Readme updates.
+- `internal` package - has no change to library functionality.
+- Rename `maxTokens` to `max` when constructing new rate limiter.
+
 ## [0.1.0] - 2023-03-30
 
 ### Added

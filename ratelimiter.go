@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/vivangkumar/ratelimit/internal/bucket"
 )
 
 // NowFunc helps with mocking time.
@@ -21,7 +23,7 @@ type RateLimiter struct {
 	m sync.Mutex
 	// bucket is the underlying storage structure
 	// for the rate limiter.
-	bucket *bucket
+	bucket *bucket.Bucket
 
 	// lastRefillAt keeps track of the time when the last
 	// refresh of tokens took place.
@@ -37,7 +39,7 @@ type RateLimiter struct {
 	now         NowFunc
 }
 
-// New constructs a rate limiter that accepts the max tokens that
+// New constructs a rate limiter that accepts the max tokens (size) that
 // the limiter holds, along with the limit per duration.
 //
 // For example: if the bucket is configured with a max of 100 tokens
@@ -46,7 +48,7 @@ type RateLimiter struct {
 // This refills the bucket with 1 token every 6s, while giving us a
 // max "burst" of 100 tokens.
 func New(
-	maxTokens uint64,
+	max uint64,
 	limit uint64,
 	per time.Duration,
 	opts ...Opt,
@@ -56,7 +58,7 @@ func New(
 	}
 
 	r := &RateLimiter{
-		bucket:      newBucket(maxTokens),
+		bucket:      bucket.New(max),
 		refillEvery: time.Duration(float64(per) / float64(limit)),
 		now:         time.Now,
 	}
@@ -83,7 +85,7 @@ func (r *RateLimiter) refill() {
 	t := (now.UnixMilli() - r.lastRefillAt) / r.refillEvery.Milliseconds()
 	if t > 0 {
 		r.lastRefillAt = now.UnixMilli()
-		r.bucket.refill(uint64(t))
+		r.bucket.Refill(uint64(t))
 	}
 }
 
@@ -105,7 +107,7 @@ func (r *RateLimiter) AddN(n uint64) bool {
 	r.refill()
 
 	r.m.Lock()
-	ok := r.bucket.takeN(n)
+	ok := r.bucket.TakeN(n)
 	r.m.Unlock()
 
 	return ok
@@ -130,7 +132,7 @@ func (r *RateLimiter) Wait(ctx context.Context) error {
 //
 // This method also consumes n tokens, if successful.
 func (r *RateLimiter) WaitN(ctx context.Context, n uint64) error {
-	if n > r.bucket.size {
+	if n > r.bucket.Size() {
 		return fmt.Errorf("tokens requested exceeds max tokens")
 	}
 

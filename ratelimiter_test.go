@@ -51,9 +51,9 @@ func TestRateLimiter_RefreshToken(t *testing.T) {
 	<-time.After(10 * time.Millisecond)
 	assert.False(t, r.Add())
 
-	// This should still be false since we're not above the
-	// threshold for a refresh.
-	<-time.After(40 * time.Millisecond)
+	// This should now be true since we're above the 100ms
+	// required for the token to be refilled.
+	<-time.After(90 * time.Millisecond)
 	assert.True(t, r.Add())
 }
 
@@ -134,7 +134,7 @@ func ExampleRateLimiter_Add() {
 		fmt.Println("Oops! We're not allowed!")
 	}
 
-	// We're allowed!
+	fmt.Println("Yay! We're allowed")
 }
 
 func ExampleRateLimiter_AddN() {
@@ -148,7 +148,7 @@ func ExampleRateLimiter_AddN() {
 		fmt.Println("Oops! We're not allowed!")
 	}
 
-	// We're allowed!
+	fmt.Println("Yay! We're allowed")
 }
 
 func ExampleRateLimiter_Wait() {
@@ -165,7 +165,7 @@ func ExampleRateLimiter_Wait() {
 		fmt.Printf("context cancelled waiting for token: %s\n", err.Error())
 	}
 
-	// We're allowed!
+	fmt.Println("Yay! We're allowed")
 }
 
 func ExampleRateLimiter_WaitN() {
@@ -182,5 +182,33 @@ func ExampleRateLimiter_WaitN() {
 		fmt.Printf("context cancelled waiting for token: %s\n", err.Error())
 	}
 
-	// We're allowed!
+	fmt.Println("Yay! We're allowed")
+}
+
+func ExampleRateLimiter() {
+	r, err := ratelimiter.New(100, 10, 1*time.Second)
+	if err != nil {
+		fmt.Printf("error creating rate limiter: %s\n", err.Error())
+	}
+
+	if r.AddN(100) {
+		fmt.Println("got all tokens")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	for i := 1; i <= 10; i++ {
+		err := r.Wait(ctx)
+		if err != nil {
+			fmt.Println("error waiting for token")
+			return
+		}
+
+		now := time.Now()
+		// ~100ms
+		fmt.Println(i, now.Sub(start))
+		start = now
+	}
 }

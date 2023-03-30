@@ -3,7 +3,6 @@ package ratelimiter
 import (
 	"context"
 	"fmt"
-	"math"
 	"sync"
 	"time"
 )
@@ -27,8 +26,7 @@ type RateLimiter struct {
 	// lastRefillAt keeps track of the time when the last
 	// refresh of tokens took place.
 	//
-	// This is tracked as a unix nanoseconds timestamp for
-	// maximum granularity.
+	// It is kept track in milliseconds.
 	lastRefillAt int64
 
 	// refillEvery is the duration after which tokens are refilled.
@@ -66,7 +64,7 @@ func New(
 	for _, opt := range opts {
 		opt(r)
 	}
-	r.lastRefillAt = r.now().UnixNano()
+	r.lastRefillAt = r.now().Unix()
 
 	return r, nil
 }
@@ -81,17 +79,11 @@ func (r *RateLimiter) refill() {
 	r.m.Lock()
 	defer r.m.Unlock()
 
-	now := r.now().UnixNano()
-	diff := now - r.lastRefillAt
-	if diff == 0 {
-		return
-	}
-
-	// Round up the value so that we can be as accurate as possible.
-	refills := math.Round(float64(diff) / float64(r.refillEvery.Nanoseconds()))
-	if refills > 0 {
-		r.bucket.refill(uint64(math.Round(refills)))
-		r.lastRefillAt = now
+	now := r.now()
+	t := (now.UnixMilli() - r.lastRefillAt) / r.refillEvery.Milliseconds()
+	if t > 0 {
+		r.lastRefillAt = now.UnixMilli()
+		r.bucket.refill(uint64(t))
 	}
 }
 
@@ -142,14 +134,20 @@ func (r *RateLimiter) WaitN(ctx context.Context, n uint64) error {
 		return fmt.Errorf("tokens requested exceeds max tokens")
 	}
 
+	// Check refillEvery duration to see if a new token is available.
+	t := time.NewTicker(r.refillEvery)
+	defer t.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
-			if r.AddN(n) {
-				return nil
+		case <-t.C:
+			if !r.AddN(n) {
+				continue
 			}
+
+			return nil
 		}
 	}
 }

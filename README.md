@@ -1,4 +1,4 @@
-## ratelimit [![Go Reference](https://pkg.go.dev/badge/github.com/vivangkumar/ratelimit.svg)](https://pkg.go.dev/github.com/vivangkumar/ratelimit) ![CI](https://github.com/vivangkumar/ratelimit/actions/workflows/ci.yaml/badge.svg?branch=main) 
+## ratelimit [![Go Reference](https://pkg.go.dev/badge/github.com/vivangkumar/ratelimit.svg)](https://pkg.go.dev/github.com/vivangkumar/ratelimit) ![CI](https://github.com/vivangkumar/ratelimit/actions/workflows/ci.yaml/badge.svg?branch=main)
 
 Ratelimit implements a [token bucket](https://en.wikipedia.org/wiki/Token_bucket) based rate limiter.
 
@@ -74,4 +74,4 @@ make build
 
 ## Changelog
 
-Please add changes between release to the changelog [Changelog](CHANGELOG.md).
+Please add changes between release to the [Changelog](CHANGELOG.md).

@@ -1,42 +1,35 @@
-name: test
-
+name: ci
 on:
+  push:
+    branches:
+      - main
   pull_request:
-    branches: ['*']
-
+    branches:
+      - main
 jobs:
   test:
-    name: Run tests
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        go: ["1.17.x", "1.18.x"]
-        include:
-        - go: 1.18.x
-          latest: true
-
+        version: [{go: '1.19.7', golangci: 'v1.52.0'}, {go: '1.20.2', golangci: 'latest'}]
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: on
     steps:
-      - name: Setup Go
-        uses: actions/setup-go@v2
+      - name: Setup go ${{ matrix.version.go }}
+        uses: actions/setup-go@v4
         with:
-          go-version: ${{ matrix.go }}
-
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Load cached dependencies
-        uses: actions/cache@v2
+          go-version: ${{ matrix.version.go }}
+      - name: Checkout Source
+        uses: actions/checkout@v3
+      - uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Format and lint
-        if: matrix.latest
-        run: make fmt
-
-      - name: Test
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+         version: ${{ matrix.version.golangci }}
+      - name: Run tests
         run: make test

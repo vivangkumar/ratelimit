@@ -33,3 +33,5 @@ jobs:
          version: ${{ matrix.version.golangci }}
       - name: Run tests
         run: make test
+      - name: Run benchmarks
+        run: make bench

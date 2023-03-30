@@ -1,4 +1,4 @@
-## ratelimit [![GoDoc][doc-img]][doc] ![Actions][ci-img]
+## ratelimit [![Go Reference](https://pkg.go.dev/badge/github.com/vivangkumar/ratelimit.svg)](https://pkg.go.dev/github.com/vivangkumar/ratelimit) ![CI](https://github.com/vivangkumar/ratelimit/actions/workflows/ci.yaml/badge.svg?branch=main) 
 
 Ratelimit implements a [token bucket](https://en.wikipedia.org/wiki/Token_bucket) based rate limiter.
 

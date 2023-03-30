@@ -20,16 +20,8 @@ type NowFunc = func() time.Time
 // Most callers should use either Wait or WaitN to wait for tokens
 // to be available.
 type RateLimiter struct {
-	m sync.Mutex
-	// bucket is the underlying storage structure
-	// for the rate limiter.
+	// bucket is the underlying storage for the rate limiter.
 	bucket *bucket.Bucket
-
-	// lastRefillAt keeps track of the time when the last
-	// refresh of tokens took place.
-	//
-	// It is kept track in milliseconds.
-	lastRefillAt int64
 
 	// refillEvery is the duration after which tokens are refilled.
 	//
@@ -37,6 +29,13 @@ type RateLimiter struct {
 	// at creation time.
 	refillEvery time.Duration
 	now         NowFunc
+
+	m sync.Mutex
+	// lastRefillAt keeps track of the time when the last
+	// refresh of tokens took place.
+	//
+	// It is kept track in milliseconds.
+	lastRefillAt int64
 }
 
 // New constructs a rate limiter that accepts the max tokens (size) that
@@ -79,13 +78,17 @@ func New(
 // the token to be taken.
 func (r *RateLimiter) refill() {
 	r.m.Lock()
-	defer r.m.Unlock()
+	lastRefill := r.lastRefillAt
+	r.m.Unlock()
 
 	now := r.now()
-	t := (now.UnixMilli() - r.lastRefillAt) / r.refillEvery.Milliseconds()
-	if t > 0 {
+	tokens := (now.UnixMilli() - lastRefill) / r.refillEvery.Milliseconds()
+	if tokens > 0 {
+		r.m.Lock()
 		r.lastRefillAt = now.UnixMilli()
-		r.bucket.Refill(uint64(t))
+		r.m.Unlock()
+
+		r.bucket.Refill(uint64(tokens))
 	}
 }
 
@@ -105,12 +108,7 @@ func (r *RateLimiter) Add() bool {
 // Its behaviour is details in bucket.takeN.
 func (r *RateLimiter) AddN(n uint64) bool {
 	r.refill()
-
-	r.m.Lock()
-	ok := r.bucket.TakeN(n)
-	r.m.Unlock()
-
-	return ok
+	return r.bucket.TakeN(n)
 }
 
 // Wait blocks until a token is available.

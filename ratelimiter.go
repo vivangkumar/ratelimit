@@ -1,4 +1,4 @@
-package ratelimiter
+package ratelimit
 
 import (
 	"context"
@@ -20,23 +20,22 @@ type NowFunc = func() time.Time
 // Most callers should use either Wait or WaitN to wait for tokens
 // to be available.
 type RateLimiter struct {
-	m sync.Mutex
-	// bucket is the underlying storage structure
-	// for the rate limiter.
+	// bucket is the underlying storage for the rate limiter.
 	bucket *bucket.Bucket
 
-	// lastRefillAt keeps track of the time when the last
-	// refresh of tokens took place.
-	//
-	// It is kept track in milliseconds.
-	lastRefillAt int64
-
-	// refillEvery is the duration after which tokens are refilled.
+	// refillDuration is the duration after which tokens are refilled.
 	//
 	// The duration is calculated based on the limit specified
 	// at creation time.
-	refillEvery time.Duration
-	now         NowFunc
+	refillDuration time.Duration
+	now            NowFunc
+
+	m sync.Mutex
+	// lastRefillUnixNs keeps track of the time when the last
+	// refresh of tokens took place.
+	//
+	// It is kept track in nanoseconds.
+	lastRefillUnixNs int64
 }
 
 // New constructs a rate limiter that accepts the max tokens (size) that
@@ -58,15 +57,15 @@ func New(
 	}
 
 	r := &RateLimiter{
-		bucket:      bucket.New(max),
-		refillEvery: time.Duration(float64(per) / float64(limit)),
-		now:         time.Now,
+		bucket:         bucket.New(max),
+		refillDuration: per / time.Duration(limit),
+		now:            time.Now,
 	}
 
 	for _, opt := range opts {
 		opt(r)
 	}
-	r.lastRefillAt = r.now().Unix()
+	r.lastRefillUnixNs = r.now().UnixNano()
 
 	return r, nil
 }
@@ -79,13 +78,17 @@ func New(
 // the token to be taken.
 func (r *RateLimiter) refill() {
 	r.m.Lock()
-	defer r.m.Unlock()
+	lastRefill := r.lastRefillUnixNs
+	r.m.Unlock()
 
 	now := r.now()
-	t := (now.UnixMilli() - r.lastRefillAt) / r.refillEvery.Milliseconds()
-	if t > 0 {
-		r.lastRefillAt = now.UnixMilli()
-		r.bucket.Refill(uint64(t))
+	tokens := (now.UnixNano() - lastRefill) / r.refillDuration.Nanoseconds()
+	if tokens > 0 {
+		r.m.Lock()
+		r.lastRefillUnixNs = now.UnixNano()
+		r.m.Unlock()
+
+		r.bucket.Refill(uint64(tokens))
 	}
 }
 
@@ -105,12 +108,7 @@ func (r *RateLimiter) Add() bool {
 // Its behaviour is details in bucket.takeN.
 func (r *RateLimiter) AddN(n uint64) bool {
 	r.refill()
-
-	r.m.Lock()
-	ok := r.bucket.TakeN(n)
-	r.m.Unlock()
-
-	return ok
+	return r.bucket.TakeN(n)
 }
 
 // Wait blocks until a token is available.
@@ -137,7 +135,7 @@ func (r *RateLimiter) WaitN(ctx context.Context, n uint64) error {
 	}
 
 	// Check refillEvery duration to see if a new token is available.
-	t := time.NewTicker(r.refillEvery)
+	t := time.NewTicker(r.refillDuration)
 	defer t.Stop()
 
 	for {

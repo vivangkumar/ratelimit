@@ -1,4 +1,4 @@
-package ratelimiter_test
+package ratelimit_test
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	ratelimiter "github.com/vivangkumar/ratelimit"
+	"github.com/vivangkumar/ratelimit"
 )
 
 func TestRateLimiter_Add_TokensAvailable(t *testing.T) {
-	r, err := ratelimiter.New(100, 100, 1*time.Second)
+	r, err := ratelimit.New(100, 100, 1*time.Second)
 	assert.Nil(t, err)
 
 	assert.True(t, r.Add())
@@ -22,19 +22,19 @@ func TestRateLimiter_Add_TokensAvailable(t *testing.T) {
 }
 
 func TestRateLimiter_NewError(t *testing.T) {
-	_, err := ratelimiter.New(100, 0, 1*time.Second)
+	_, err := ratelimit.New(100, 0, 1*time.Second)
 	assert.Error(t, err)
 }
 
 func TestRateLimiter_AddN(t *testing.T) {
-	r, err := ratelimiter.New(10, 10, 1*time.Second)
+	r, err := ratelimit.New(10, 10, 1*time.Second)
 	assert.Nil(t, err)
 
 	assert.True(t, r.AddN(10))
 }
 
 func TestRateLimiter_Add_NoTokens(t *testing.T) {
-	r, err := ratelimiter.New(1, 1, 1*time.Second)
+	r, err := ratelimit.New(1, 1, 1*time.Second)
 	assert.Nil(t, err)
 
 	assert.True(t, r.Add())
@@ -42,7 +42,7 @@ func TestRateLimiter_Add_NoTokens(t *testing.T) {
 }
 
 func TestRateLimiter_RefreshToken(t *testing.T) {
-	r, err := ratelimiter.New(10, 10, 1*time.Second)
+	r, err := ratelimit.New(10, 10, 1*time.Second)
 	assert.Nil(t, err)
 
 	assert.True(t, r.AddN(10))
@@ -58,7 +58,7 @@ func TestRateLimiter_RefreshToken(t *testing.T) {
 }
 
 func TestRateLimiter_Wait(t *testing.T) {
-	r, err := ratelimiter.New(100, 10, 1*time.Second)
+	r, err := ratelimit.New(100, 10, 1*time.Second)
 	assert.Nil(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -72,7 +72,7 @@ func TestRateLimiter_Wait(t *testing.T) {
 }
 
 func TestRateLimiter_WaitN(t *testing.T) {
-	r, err := ratelimiter.New(100, 10, 1*time.Second)
+	r, err := ratelimit.New(100, 10, 1*time.Second)
 	assert.Nil(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -87,7 +87,7 @@ func TestRateLimiter_WaitN(t *testing.T) {
 }
 
 func TestRateLimiter_WaitN_ExceedsMaxTokens(t *testing.T) {
-	r, err := ratelimiter.New(100, 10, 1*time.Second)
+	r, err := ratelimit.New(100, 10, 1*time.Second)
 	assert.Nil(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -102,7 +102,7 @@ func TestRateLimiter_WaitN_ExceedsMaxTokens(t *testing.T) {
 }
 
 func TestRateLimiter_WaitCancel(t *testing.T) {
-	r, err := ratelimiter.New(100, 10, 1*time.Minute)
+	r, err := ratelimit.New(100, 10, 1*time.Minute)
 	assert.Nil(t, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -115,16 +115,25 @@ func TestRateLimiter_WaitCancel(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func BenchmarkRateLimiter(b *testing.B) {
+	b.ReportAllocs()
+
+	rl, _ := ratelimit.New(uint64(b.N), uint64(b.N), 1*time.Second)
+	for i := 0; i < b.N; i++ {
+		rl.Add()
+	}
+}
+
 func ExampleNew() {
 	// Create a new rate limiter instance.
-	_, err := ratelimiter.New(100, 10, time.Second)
+	_, err := ratelimit.New(100, 10, time.Second)
 	if err != nil {
 		fmt.Printf("context cancelled waiting for token: %s\n", err.Error())
 	}
 }
 
 func ExampleRateLimiter_Add() {
-	r, err := ratelimiter.New(100, 10, time.Second)
+	r, err := ratelimit.New(100, 10, time.Second)
 	if err != nil {
 		fmt.Printf("context cancelled waiting for token: %s\n", err.Error())
 	}
@@ -138,7 +147,7 @@ func ExampleRateLimiter_Add() {
 }
 
 func ExampleRateLimiter_AddN() {
-	r, err := ratelimiter.New(100, 10, time.Second)
+	r, err := ratelimit.New(100, 10, time.Second)
 	if err != nil {
 		fmt.Printf("error creating rate limiter: %s\n", err.Error())
 	}
@@ -152,7 +161,7 @@ func ExampleRateLimiter_AddN() {
 }
 
 func ExampleRateLimiter_Wait() {
-	r, err := ratelimiter.New(100, 10, time.Second)
+	r, err := ratelimit.New(100, 10, time.Second)
 	if err != nil {
 		fmt.Printf("error creating rate limiter: %s\n", err.Error())
 	}
@@ -169,7 +178,7 @@ func ExampleRateLimiter_Wait() {
 }
 
 func ExampleRateLimiter_WaitN() {
-	r, err := ratelimiter.New(100, 10, time.Second)
+	r, err := ratelimit.New(100, 10, time.Second)
 	if err != nil {
 		fmt.Printf("error creating rate limiter: %s\n", err.Error())
 	}
@@ -186,7 +195,7 @@ func ExampleRateLimiter_WaitN() {
 }
 
 func ExampleRateLimiter() {
-	r, err := ratelimiter.New(100, 10, 1*time.Second)
+	r, err := ratelimit.New(100, 10, 1*time.Second)
 	if err != nil {
 		fmt.Printf("error creating rate limiter: %s\n", err.Error())
 	}

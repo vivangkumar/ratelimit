@@ -35,3 +35,12 @@ func TestBucket_Refill(t *testing.T) {
 	b.Refill(20)
 	assert.EqualValues(t, b.Available(), 10)
 }
+
+func BenchmarkBucket(b *testing.B) {
+	b.ReportAllocs()
+
+	bucket := bucket.New(uint64(b.N) * 1000000000000)
+	for i := 0; i < b.N; i++ {
+		bucket.Take()
+	}
+}

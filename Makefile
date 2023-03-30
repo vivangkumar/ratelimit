@@ -1,4 +1,4 @@
-.PHONY: test build lint fmt
+.PHONY: test bench build lint fmt
 
 lint := go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
 
@@ -22,3 +22,7 @@ lint:
 test:
 	@echo "Running tests..."
 	go test -v -race ./...
+
+bench:
+	@echo "Running benchmarks..."
+	go test -bench=. -count 5 -run=^# ./...
